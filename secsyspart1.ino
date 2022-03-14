@@ -17,9 +17,9 @@ int time_stage2 = 3; //default: 3
 
 int final_time = 600; //time after final alarm goes on and disabled itself (in seconds) - default: 600
 
-int cooldown = 180; //cooldown time after disabling the system (in seconds) - default: 180
+int cooldown = 420; //cooldown time after disabling the system (in seconds) - default: 180
 
-int time_activator = 100; //how "long" the message to the second device will be
+int time_activator = 50; //how "long" the message to the second device will be (should be the same in secsyspart2) - default: 100
 
 
 //[]==========[pins start]==========[]
@@ -258,6 +258,11 @@ void loop() {
 
     //cooldown counter for unarming
     if (system_unarmed == true) {
+      //reset timer
+      if (digitalRead(D2) == HIGH) {
+        time_cooldown = 0;
+      }
+      
       time_cooldown++;
     }
   }
