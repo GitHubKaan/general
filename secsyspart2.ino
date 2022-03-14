@@ -1,146 +1,127 @@
-/* secsys software by kaan turan (version 1.0) for node mcu 2688
- * software: secsys 2/2 for device number 2/2 (backend)
- * 
- * info
- * > status: HIGH (signal on), LOW (signal off)
- * 
+//com7
+
+/*
+ * reciving information: digitalRead(recive_message) == HIGH/LOW
  */
 
-
-//[]==========[settings start]==========[]
-int tuning = 100; //time management tuning (1000 = 1 sec) - default: 100
-int cooldown = 1; //time for cooldown between signals (5 = 1/2 sec) - default: 1
-int infotime = 100; //time for console info messages (10 = 1 sec) - default: 100
-int alarmtime = 370; //time before alarm get enabled (10 = 1 sec) - default: should be as long as in secsyspart1 (minus apr. 10 because of delay (=370))
-int alarmactivetime = 100; //how many times the alarm should give a feedback after being active - default: 100
-
-//[]==========[pins start]==========[]
-int reciver = D7; //signals from secsys device one
-int sound = D1; //signal to sound device
-int led = D5; //led
-
-int time_info = 0; //console time counter
-
-boolean triggered = false; //when alarm gets triggered
-
-int time_cooldown = 0; //cooldown between signals
-
-boolean alarm_active = false; //if alarm is activ now
-
-boolean first_start = true; //just on first start
-
-boolean temp = false;
-
-int timer = 0; //counter for alarm time enabeling
-
-boolean resetter = false;
+//settings
+int message_time = 150; //1000: 1 sec, should be the same as in secsyspart1 (+50)
+int alarm_activasion = 3800; //100 = 1sek (should be the same as in secsyspart1 +10) 38 sec default || 3800 def.
+int alarm_repeat = 600; //one rep one sec (600 = 10 min) 600 = default
 
 
-//[]==========[setup]==========[]
+
+
+//variablen
+int counter = 0;
+int recive_message = D8;
+int led = D7;
+int sound = D3;
+
+int led_status = 0;
+boolean alarm_active = false;
+int alarm_status = 0;
+
+int alarm_counter = 0;
+
+boolean firststart = true;
+boolean test = false;
+
 void setup() {
   Serial.begin(500000);
-  
+
   pinMode(led, OUTPUT);
   pinMode(sound, OUTPUT);
-  pinMode(reciver, INPUT);
+  
+  pinMode(recive_message, INPUT);
 }
 
-
-//[]==========[loop]==========[]
 void loop() {
-  //will only be enabled at first start
-  if (first_start == true) {
-    for (int i = 0; i < 30; i++) {
-      Serial.println();
-    }
-    for (int i = 0; i < 2; i++) {
-      digitalWrite(led, HIGH); digitalWrite(sound, HIGH); delay(30); digitalWrite(led, LOW); digitalWrite(sound, LOW); delay(30);
-    }
-    
-    Serial.println("system now online");
-    
-    first_start = false;
-  }
-
-  //disabeling alarm
-  if (alarm_active == true && digitalRead(reciver) == HIGH) {
-    alarm_active = false;
-    temp = true;
-    timer = 0;
-    
-    digitalWrite(led, LOW);
-    
-    Serial.println("alarm disabled");
-  } else if (alarm_active == true) {
-    if (timer >= alarmtime) {
-      for (int i = 0; i < alarmactivetime; i++) {
-        digitalWrite(sound, HIGH);
-        digitalWrite(led, HIGH);
-        delay(500);
-        digitalWrite(sound, LOW);
-        digitalWrite(led, LOW);
-        delay(500);
-      }
-      
-      //reset after alarm
-      time_info = 0;
-      triggered = false;
-      time_cooldown = 0;
-      alarm_active = false;
-      first_start = true;
-      temp = false;
-      timer = 0;
-    
-      resetter = true;
-
-      Serial.println("alarm now disabled");
-    }
-  }
-
-  if (resetter == false) {
-    //timer
-    if (alarm_active == true) {
-      timer++;
-    }
-  
-    if (temp == false) {
-      //when reciver gets a signal
-      if (digitalRead(reciver) == HIGH && triggered == false) {
-        triggered = true;
-        alarm_active = true;
-    
-        digitalWrite(led, HIGH);
-    
-        Serial.println("trigger");
-      }
-      if (triggered == true) { //counter for cooldown time between signals
-        time_cooldown++;
-
-        if (time_cooldown >= cooldown) { //cooldown time
-          triggered = false;
-      
-          Serial.println("input free for new signal");
-        }
-      }
-    }
-    temp = false;
-  
-    //general console info
-    if (alarm_active == false) {
+  if (firststart == true) {
+    for (int i = 0; i < 5; i++) {
+      delay(50);
+      digitalWrite(led, HIGH);
+      delay(50);
       digitalWrite(led, LOW);
     }
-    if (time_info >= infotime) {
-      time_info = 0;
+    
+    firststart = false;
+  }
+  
+  //led on message recive 
+  if (alarm_active == true) {
+    digitalWrite(led, HIGH);
+    if (alarm_status <= 0) {
+      alarm_status++;
+      delay(message_time);
+    }
+  } else {
+    digitalWrite(led, LOW);
+  }
 
-      if (alarm_active == false) {
-        digitalWrite(led, HIGH);
+  if (alarm_status >= 2) {
+    alarm_active = false;
+    alarm_status = 0;
+    alarm_counter = 0;
+  }
+  
+  //reciving part
+  if (digitalRead(recive_message) == HIGH) {
+    alarm_active = true;
+    alarm_status++;
+    Serial.println("signal recived");
+  } else if (digitalRead(recive_message) == LOW) {
+    if (alarm_status == 0) {
+      Serial.println("no signal");
+    } else {
+      Serial.println("awaiting signal");
+      Serial.println(alarm_counter);
+      Serial.println("----------");
+    }
+  }
+  
+  //counter
+  if (counter >= 1000) {
+    counter = 0;
+  }
+  
+  if (counter == 0) {
+    digitalWrite(led, HIGH);
+  } else if (counter == 500) {
+    digitalWrite(led, LOW);
+  }
+  
+  if (alarm_status == 0) {
+    Serial.println(counter);
+  }
+  counter++;
+
+  //alarm counter
+  if (alarm_active == true && alarm_active) {
+    alarm_counter++;
+    
+    if (alarm_counter >= alarm_activasion) {
+
+      Serial.println("main alarm is now active");
       
-        Serial.println("system currently inactive");
+      for (int i = 0; i < alarm_repeat; i++) {
+        
+        delay(250);
+        digitalWrite(led, LOW);
+        delay(250);
+        digitalWrite(led, HIGH);
+        digitalWrite(sound, HIGH);
+        Serial.println("ping");
+        delay(250);
+        digitalWrite(led, LOW);
+        delay(250);
+        digitalWrite(led, HIGH);
+        digitalWrite(sound, LOW);
+        Serial.println("pong");
       }
     }
   }
-  resetter = false;
-
-  time_info++;
-  delay(tuning);
+  
+  //loop delay
+  delay(10);
 }
