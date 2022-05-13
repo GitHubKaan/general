@@ -108,8 +108,6 @@ void loop() {
 
       Serial.println("main alarm is now active");
       digitalWrite(sound, HIGH);
-      tone(sound, 1000, 1000);
-      
       for (int i = 0; i < alarm_repeat; i++) {
         
         delay(250);
