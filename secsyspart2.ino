@@ -10,7 +10,7 @@ int alarm_activasion = 3800; //100 = 1sek (should be the same as in secsyspart1 
 int alarm_repeat = 600; //one rep one sec (600 = 10 min) 600 = default
 
 
-
+int onboard = 2;
 
 //variablen
 int counter = 0;
@@ -32,6 +32,7 @@ void setup() {
 
   pinMode(led, OUTPUT);
   pinMode(sound, OUTPUT);
+  pinMode(onboard, OUTPUT);
   
   pinMode(recive_message, INPUT);
 }
@@ -67,6 +68,9 @@ void loop() {
   
   //reciving part
   if (digitalRead(recive_message) == HIGH) {
+    digitalWrite(onboard, HIGH);
+    delay(50);
+    digitalWrite(onboard, LOW);
     alarm_active = true;
     alarm_status++;
     Serial.println("signal recived");
@@ -74,7 +78,7 @@ void loop() {
     if (alarm_status == 0) {
       Serial.println("no signal");
     } else {
-      Serial.println("awaiting signal");
+      Serial.println("awaiting signal -> 3799");
       Serial.println(alarm_counter);
       Serial.println("----------");
     }
@@ -103,6 +107,8 @@ void loop() {
     if (alarm_counter >= alarm_activasion) {
 
       Serial.println("main alarm is now active");
+      digitalWrite(sound, HIGH);
+      tone(sound, 1000, 1000);
       
       for (int i = 0; i < alarm_repeat; i++) {
         
@@ -110,13 +116,11 @@ void loop() {
         digitalWrite(led, LOW);
         delay(250);
         digitalWrite(led, HIGH);
-        digitalWrite(sound, HIGH);
         Serial.println("ping");
         delay(250);
         digitalWrite(led, LOW);
         delay(250);
         digitalWrite(led, HIGH);
-        digitalWrite(sound, LOW);
         Serial.println("pong");
       }
     }
